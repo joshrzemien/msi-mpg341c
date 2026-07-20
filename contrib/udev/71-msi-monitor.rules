@@ -1,0 +1,4 @@
+# Grant the active local seat access to MSI monitor HID controllers.
+# The application still verifies the report descriptor, model, and UART version
+# before sending feature commands because MSI reuses this USB product ID.
+SUBSYSTEM=="hidraw", KERNEL=="hidraw*", ATTRS{idVendor}=="1462", ATTRS{idProduct}=="3fa4", TAG+="uaccess"

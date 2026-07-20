@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "msi-mpg341c"
+version = "0.1.0"
+description = "Linux userspace control for the MSI MPG 341C QD-OLED monitor"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "GPL-3.0-or-later"
+authors = [
+  { name = "Josh Rzemien", email = "joshua.k.rzemien@gmail.com" },
+]
+keywords = ["ddc", "hidraw", "kvm", "linux", "monitor", "msi"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: End Users/Desktop",
+  "Operating System :: POSIX :: Linux",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Topic :: System :: Hardware",
+]
+dependencies = []
+
+[project.optional-dependencies]
+test = ["pytest>=8"]
+
+[project.scripts]
+msi-monitor = "msi_monitor.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/joshrzemien/msi-mpg341c"
+Issues = "https://github.com/joshrzemien/msi-mpg341c/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
