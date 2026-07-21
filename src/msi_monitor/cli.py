@@ -39,12 +39,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
         help="select a specific ddcutil I2C bus on Linux",
     )
     parser.add_argument(
-        "--ddc-display",
-        help="select a specific BetterDisplay UUID on macOS",
-    )
-    parser.add_argument(
         "--ddcutil",
-        "--betterdisplaycli",
         dest="ddc_executable",
         metavar="PATH",
         help=argparse.SUPPRESS,
@@ -191,7 +186,6 @@ def main(argv: Sequence[str] | None = None) -> int:
             device=args.device,
             serial=args.serial,
             ddc_bus=args.ddc_bus,
-            ddc_display=args.ddc_display,
             ddc_executable=args.ddc_executable,
         ) as controller:
             if args.command == "status":

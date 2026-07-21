@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.3.0 — 2026-07-21
+
+- Switch macOS input control to the verified MSI HID `00500` command.
+- Remove the BetterDisplay runtime dependency and macOS DDC selectors.
+- Keep Linux input control on `ddcutil` so it can restore input after USB KVM routing moves.
+
 ## 0.2.1 — 2026-07-21
 
 - Poll DDC input read-back for up to five seconds so delayed source changes verify reliably.

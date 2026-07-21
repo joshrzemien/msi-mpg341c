@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import time
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
@@ -40,17 +41,18 @@ class Controller:
         device: str | Path | None = None,
         serial: str | None = None,
         ddc_bus: int | None = None,
-        ddc_display: str | None = None,
         ddc_executable: str | None = None,
+        platform_name: str = sys.platform,
     ):
         self.profile = profile
+        self.platform_name = platform_name
         self.requested_device = device
         self.requested_serial = serial
         self.ddc = DdcTransport(
             profile,
             bus=ddc_bus,
-            display=ddc_display,
             executable=ddc_executable,
+            platform_name=platform_name,
         )
         self._hid: HidDevice | None = None
         self._candidate: HidCandidate | None = None
@@ -130,8 +132,44 @@ class Controller:
         self._identity_values = {"model": model, "uart-version": uart}
         return device
 
+    def _uses_hid_input(self, feature_name: str) -> bool:
+        return (
+            feature_name == "input"
+            and self.platform_name == "darwin"
+            and self.profile.hid_input_feature is not None
+        )
+
+    def _input_features(self) -> tuple[Feature, Feature]:
+        public_feature = self.profile.features["input"]
+        hid_feature = self.profile.hid_input_feature
+        if (
+            hid_feature is None
+            or hid_feature.choices is None
+            or public_feature.choices is None
+        ):
+            raise MonitorError(f"{self.profile.product_name} has no verified HID input profile")
+        return public_feature, hid_feature
+
+    def _query_hid_input(self) -> int:
+        public_feature, hid_feature = self._input_features()
+        hid_value = self._select_hid().query("input", hid_feature)
+        for name, value in hid_feature.choices.items():
+            if value == hid_value:
+                return public_feature.choices[name]
+        raise MonitorError(f"unexpected HID input value: {hid_value}")
+
+    def _send_hid_input(self, target: int) -> None:
+        public_feature, hid_feature = self._input_features()
+        for name, value in public_feature.choices.items():
+            if value == target:
+                self._select_hid().send("input", hid_feature, hid_feature.choices[name])
+                return
+        raise MonitorError(f"unsupported HID input target: {target}")
+
     def read_feature(self, feature_name: str) -> int:
         feature = self._feature(feature_name)
+        if self._uses_hid_input(feature_name):
+            return self._query_hid_input()
         if feature.source == "ddc":
             return self.ddc.query_input()
         device = self._select_hid()
@@ -163,14 +201,16 @@ class Controller:
                 f"refusing OLED-care change {feature_name} without --allow-panel-risk"
             )
 
-        if feature.source == "ddc":
+        uses_hid_input = self._uses_hid_input(feature_name)
+        if uses_hid_input:
+            self._send_hid_input(target)
+        elif feature.source == "ddc":
             self.ddc.set_input(target)
         else:
             self._select_hid().send(feature_name, feature, target)
 
-        verification_deadline = time.monotonic() + (
-            5.0 if feature.source == "ddc" else 0.25
-        )
+        uses_ddc = feature.source == "ddc" and not uses_hid_input
+        verification_deadline = time.monotonic() + (5.0 if uses_ddc else 0.25)
         verified = current
         verification_error: MonitorError | None = None
         while True:
@@ -188,7 +228,7 @@ class Controller:
                     "switched",
                     verified=verified,
                 )
-            if feature.source != "ddc" or time.monotonic() >= verification_deadline:
+            if not uses_ddc or time.monotonic() >= verification_deadline:
                 break
 
         if verification_error is not None:

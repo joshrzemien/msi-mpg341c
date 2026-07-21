@@ -47,7 +47,16 @@ A successful KVM write can immediately disconnect the HID controller. The CLI th
 
 ## Input source
 
-Input reads and writes use standard DDC/CI VCP feature `0x60`, not the MSI HID channel. Verified values are:
+macOS uses the MSI HID key `00500`, verified against MSI Gaming Intelligence 0.1.4.7 and the connected model-117 monitor:
+
+| Value | Input |
+| ---: | --- |
+| `0` | HDMI 1 |
+| `1` | HDMI 2 |
+| `2` | DisplayPort |
+| `3` | USB Type-C |
+
+Linux uses standard DDC/CI VCP feature `0x60`:
 
 | Value | Input |
 | ---: | --- |
@@ -56,13 +65,13 @@ Input reads and writes use standard DDC/CI VCP feature `0x60`, not the MSI HID c
 | `0x11` | HDMI 1 |
 | `0x12` | HDMI 2 |
 
-Using DDC/CI is intentional: it permits the video source to be restored from a computer after the monitor's USB KVM has routed the HID controller elsewhere.
+The asymmetric transport is intentional. macOS can safely switch away while it owns the Type-C USB controller; Linux retains DDC/CI so it can restore Type-C after USB KVM routing moves away.
 
 ## Transaction policy
 
 The implementation:
 
-1. Opens the selected `hidraw` device read/write and takes a non-blocking exclusive file lock.
+1. Opens the selected Linux `hidraw` or macOS HIDAPI device and takes a non-blocking exclusive lock.
 2. Drains stale input reports.
 3. Sends one padded report.
 4. For queries, waits up to two seconds for a matching response.

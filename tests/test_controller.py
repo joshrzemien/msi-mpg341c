@@ -9,6 +9,9 @@ class FakeHid:
         self.values = values
         self.sent = []
 
+    def query(self, feature_name, _feature):
+        return self.values[feature_name]
+
     def send(self, feature_name, _feature, target):
         self.sent.append((feature_name, target))
         self.values[feature_name] = target
@@ -28,7 +31,7 @@ class FakeDdc:
 
 
 def _hid_controller(monkeypatch, feature_name, current):
-    controller = Controller()
+    controller = Controller(platform_name="linux")
     values = {feature_name: current}
     hid = FakeHid(values)
     monkeypatch.setattr(controller, "read_feature", lambda name: values[name])
@@ -77,7 +80,7 @@ def test_hid_write_is_read_back(monkeypatch):
 
 
 def test_ddc_input_write_is_read_back(monkeypatch):
-    controller = Controller()
+    controller = Controller(platform_name="linux")
     ddc = FakeDdc(0x11)
     controller.ddc = ddc
     monkeypatch.setattr("msi_monitor.controller.time.sleep", lambda _seconds: None)
@@ -89,8 +92,24 @@ def test_ddc_input_write_is_read_back(monkeypatch):
     assert result.verified == 0x10
 
 
+def test_macos_input_uses_hid_values(monkeypatch):
+    controller = Controller(platform_name="darwin")
+    hid = FakeHid({"input": 3})
+    monkeypatch.setattr(controller, "_select_hid", lambda: hid)
+    monkeypatch.setattr("msi_monitor.controller.time.sleep", lambda _seconds: None)
+
+    assert controller.read_feature("input") == 0x10
+
+    result = controller.change_feature("input", "hdmi-1", allow_disconnect=True)
+
+    assert hid.sent == [("input", 0)]
+    assert result.outcome == "switched"
+    assert result.current == 0x10
+    assert result.verified == 0x11
+
+
 def test_ddc_input_verification_polls_until_source_changes(monkeypatch):
-    controller = Controller()
+    controller = Controller(platform_name="linux")
     values = iter((0x10, 0x10, 0x11))
     sent = []
     sleeps = []
@@ -114,7 +133,7 @@ def test_ddc_input_verification_polls_until_source_changes(monkeypatch):
 
 
 def test_disconnect_after_write_is_reported_as_unverified(monkeypatch):
-    controller = Controller()
+    controller = Controller(platform_name="linux")
     hid = FakeHid({"kvm": 0})
     read_count = 0
 

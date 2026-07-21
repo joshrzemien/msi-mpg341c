@@ -27,25 +27,22 @@ The tool directly controls physical hardware. Keep the monitor's OSD controls av
 ## Requirements
 
 - Python 3.11 or newer
-- The monitor's USB upstream connection for HID settings and KVM control
+- The monitor's USB upstream connection for HID settings, Mac input switching, and KVM control
 - Linux: [`ddcutil`](https://www.ddcutil.com/) for video-input reads and writes
-- macOS: [BetterDisplay](https://betterdisplay.pro/) running with CLI integration enabled for video-input reads and writes
 
-The DDC input path remains available when a KVM switch moves the monitor's USB controller to the other computer.
+Linux keeps a DDC input path available when KVM routing moves the USB controller away. macOS switches input directly over the verified MSI HID protocol and requires no display-control application.
 
 ## Installation
 
 ### macOS
 
 ```bash
-brew install --cask betterdisplay
 git clone https://github.com/joshrzemien/msi-mpg341c.git
 cd msi-mpg341c
 uv tool install .
-open -a BetterDisplay
 ```
 
-BetterDisplay's CLI integration is enabled by default. The Python package installs the native `hidapi` dependency on macOS; no kernel extension or elevated USB permissions are required.
+The Python package installs the native `hidapi` dependency on macOS; no kernel extension, elevated USB permissions, or background display utility is required.
 
 ### Arch Linux / AUR
 
@@ -107,7 +104,7 @@ msi-monitor set input hdmi-1 --allow-disconnect
 
 ### Multiple monitors
 
-Automatic selection refuses ambiguous supported HID controllers or DDC displays. Select one explicitly with a global option placed before the command:
+Automatic selection refuses ambiguous supported HID controllers or Linux DDC displays. Select one explicitly with a global option placed before the command:
 
 ```bash
 # Linux
@@ -116,12 +113,9 @@ msi-monitor --ddc-bus 3 get input
 
 # Linux or macOS
 msi-monitor --serial A02019010700 get brightness
-
-# macOS; obtain the UUID with: betterdisplaycli get --identifiers
-msi-monitor --ddc-display 29E93D45-E1B5-44D1-A989-67F184915919 get input
 ```
 
-`--device` and `--serial` never bypass descriptor or profile verification. `--ddc-bus` selects a Linux I2C bus; `--ddc-display` selects a BetterDisplay UUID on macOS.
+`--device` and `--serial` never bypass descriptor or profile verification. `--ddc-bus` selects a Linux I2C bus.
 
 ### JSON output
 
@@ -144,9 +138,9 @@ Errors are written to stderr. Exit code `2` means a command was sent but could n
 - `hid.py`: platform transport dispatch
 - `hidraw.py`: Linux discovery, locking, and HID I/O
 - `hidmac.py`: macOS IOKit identity verification and HIDAPI I/O
-- `ddc.py`: constrained `ddcutil` or BetterDisplay CLI invocation for input control
+- `ddc.py`: constrained Linux `ddcutil` invocation for input control
 
-The Linux implementation uses a short-lived process and active-seat udev access. The macOS HID path is also short-lived; input control uses the running BetterDisplay app's CLI integration.
+Linux uses a short-lived process and active-seat udev access. macOS uses short-lived HID access for every setting, including video input; it has no resident application dependency.
 
 ## Development
 

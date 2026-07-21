@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msi-mpg341c"
-version = "0.2.1"
+version = "0.3.0"
 description = "Linux and macOS control for the MSI MPG 341C QD-OLED monitor"
 readme = "README.md"
 requires-python = ">=3.11"

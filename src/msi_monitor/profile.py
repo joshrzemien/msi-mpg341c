@@ -36,8 +36,7 @@ class MonitorProfile:
     tested_firmware: tuple[int, ...]
     ddc_manufacturer: str
     ddc_model: str
-    edid_vendor_id: int
-    edid_product_id: int
+    hid_input_feature: Feature | None
     features: Mapping[str, Feature]
     status_features: tuple[str, ...]
 
@@ -53,6 +52,19 @@ INPUT_SOURCES = {
     "displayport": 0x0F,
     "type-c": 0x10,
 }
+HID_INPUT_SOURCES = {
+    "hdmi-1": 0,
+    "hdmi-2": 1,
+    "displayport": 2,
+    "type-c": 3,
+}
+HID_INPUT_FEATURE = Feature(
+    "00500",
+    "Active video input over MSI HID",
+    choices=HID_INPUT_SOURCES,
+    safety="disconnect",
+)
+
 
 FEATURES: dict[str, Feature] = {
     "input": Feature(
@@ -225,8 +237,7 @@ MPG341CX = MonitorProfile(
     tested_firmware=(20,),
     ddc_manufacturer="MSI",
     ddc_model="MPG341CX OLED",
-    edid_vendor_id=0x3669,
-    edid_product_id=0x4DD0,
+    hid_input_feature=HID_INPUT_FEATURE,
     features=FEATURES,
     status_features=STATUS_FEATURES,
 )
