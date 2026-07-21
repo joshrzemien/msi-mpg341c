@@ -4,25 +4,28 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "msi-mpg341c"
-version = "0.1.0"
-description = "Linux userspace control for the MSI MPG 341C QD-OLED monitor"
+version = "0.2.0"
+description = "Linux and macOS control for the MSI MPG 341C QD-OLED monitor"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "GPL-3.0-or-later"
 authors = [
   { name = "Josh Rzemien", email = "joshua.k.rzemien@gmail.com" },
 ]
-keywords = ["ddc", "hidraw", "kvm", "linux", "monitor", "msi"]
+keywords = ["ddc", "hid", "kvm", "linux", "macos", "monitor", "msi"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "Environment :: Console",
   "Intended Audience :: End Users/Desktop",
   "Operating System :: POSIX :: Linux",
+  "Operating System :: MacOS :: MacOS X",
   "Programming Language :: Python :: 3",
   "Programming Language :: Python :: 3 :: Only",
   "Topic :: System :: Hardware",
 ]
-dependencies = []
+dependencies = [
+  "hidapi>=0.14.0.post4; sys_platform == 'darwin'",
+]
 
 [project.optional-dependencies]
 test = ["pytest>=8"]

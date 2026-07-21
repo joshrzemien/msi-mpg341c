@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.0 — 2026-07-21
+
+- Add native macOS HID discovery and I/O through IOKit identity data and HIDAPI.
+- Add guarded macOS DDC input control through BetterDisplay CLI integration.
+- Add macOS device selectors, packaging metadata, tests, and CI coverage.
+- Preserve exact report-descriptor, model, UART, ambiguity, and read-back safety checks on both platforms.
+
 ## 0.1.0 — 2026-07-20
 
 - Add guarded control for 36 writable monitor settings.

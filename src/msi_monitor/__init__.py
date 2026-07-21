@@ -1,3 +1,3 @@
-"""Control MSI MPG 341C QD-OLED monitors on Linux."""
+"""Control MSI MPG 341C QD-OLED monitors on Linux and macOS."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

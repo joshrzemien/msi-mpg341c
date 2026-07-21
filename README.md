@@ -1,6 +1,6 @@
 # msi-mpg341c
 
-Linux userspace control for the **MSI MPG 341C QD-OLED** monitor. It exposes monitor settings, input selection, and USB KVM routing through a guarded command-line interface.
+Linux and macOS control for the **MSI MPG 341C QD-OLED** monitor. It exposes monitor settings, input selection, and USB KVM routing through a guarded command-line interface.
 
 This is an independent interoperability project and is not affiliated with or endorsed by MSI.
 
@@ -26,14 +26,26 @@ The tool directly controls physical hardware. Keep the monitor's OSD controls av
 
 ## Requirements
 
-- Linux
 - Python 3.11 or newer
-- [`ddcutil`](https://www.ddcutil.com/) for video-input reads and writes
 - The monitor's USB upstream connection for HID settings and KVM control
+- Linux: [`ddcutil`](https://www.ddcutil.com/) for video-input reads and writes
+- macOS: [BetterDisplay](https://betterdisplay.pro/) running with CLI integration enabled for video-input reads and writes
 
 The DDC input path remains available when a KVM switch moves the monitor's USB controller to the other computer.
 
 ## Installation
+
+### macOS
+
+```bash
+brew install --cask betterdisplay
+git clone https://github.com/joshrzemien/msi-mpg341c.git
+cd msi-mpg341c
+uv tool install .
+open -a BetterDisplay
+```
+
+BetterDisplay's CLI integration is enabled by default. The Python package installs the native `hidapi` dependency on macOS; no kernel extension or elevated USB permissions are required.
 
 ### Arch Linux / AUR
 
@@ -43,13 +55,12 @@ paru -S msi-mpg341c
 
 The package installs the Python application, `ddcutil`, and the udev access rule.
 
-### From source
+### Linux from source
 
 ```bash
 git clone https://github.com/joshrzemien/msi-mpg341c.git
 cd msi-mpg341c
-python -m venv .venv
-.venv/bin/pip install .
+uv tool install .
 sudo install -Dm644 contrib/udev/71-msi-monitor.rules \
   /etc/udev/rules.d/71-msi-monitor.rules
 sudo udevadm control --reload
@@ -58,7 +69,7 @@ sudo udevadm trigger --subsystem-match=hidraw
 
 Reconnect the monitor's USB upstream cable after installing the rule. Do not run `msi-monitor` with `sudo`.
 
-A wheel or `pipx` installation cannot install system udev rules; install the rule separately as shown above.
+A Python package installer cannot install system udev rules; install the rule separately as shown above.
 
 ## Usage
 
@@ -96,15 +107,21 @@ msi-monitor set input hdmi-1 --allow-disconnect
 
 ### Multiple monitors
 
-Automatic selection refuses ambiguous supported HID controllers. Select one explicitly with a global option placed before the command:
+Automatic selection refuses ambiguous supported HID controllers or DDC displays. Select one explicitly with a global option placed before the command:
 
 ```bash
+# Linux
 msi-monitor --device /dev/hidraw4 get brightness
-msi-monitor --serial A02019010700 get brightness
 msi-monitor --ddc-bus 3 get input
+
+# Linux or macOS
+msi-monitor --serial A02019010700 get brightness
+
+# macOS; obtain the UUID with: betterdisplaycli get --identifiers
+msi-monitor --ddc-display 29E93D45-E1B5-44D1-A989-67F184915919 get input
 ```
 
-`--device` and `--serial` never bypass descriptor or profile verification. `--ddc-bus` avoids ambiguity when multiple matching DDC displays are present.
+`--device` and `--serial` never bypass descriptor or profile verification. `--ddc-bus` selects a Linux I2C bus; `--ddc-display` selects a BetterDisplay UUID on macOS.
 
 ### JSON output
 
@@ -124,18 +141,19 @@ Errors are written to stderr. Exit code `2` means a command was sent but could n
 - `controller.py`: feature operations, safety policy, and read-back verification
 - `profile.py`: verified device identity and feature catalog
 - `protocol.py`: pure HID frame construction and response decoding
+- `hid.py`: platform transport dispatch
 - `hidraw.py`: Linux discovery, locking, and HID I/O
-- `ddc.py`: constrained `ddcutil` invocation for input control
+- `hidmac.py`: macOS IOKit identity verification and HIDAPI I/O
+- `ddc.py`: constrained `ddcutil` or BetterDisplay CLI invocation for input control
 
-The implementation uses a short-lived process and active-seat udev access. It does not require a daemon or kernel module.
+The Linux implementation uses a short-lived process and active-seat udev access. The macOS HID path is also short-lived; input control uses the running BetterDisplay app's CLI integration.
 
 ## Development
 
 ```bash
-python -m venv .venv
-.venv/bin/pip install -e '.[test]' build
-.venv/bin/pytest
-.venv/bin/python -m build
+uv sync --extra test
+uv run pytest
+uv build
 ```
 
 Tests use captured protocol shapes and test doubles; they do not write to monitor hardware. New device profiles must include read-only identity evidence and hardware validation for every exposed write. Shared VID/PID values are not sufficient evidence of compatibility.

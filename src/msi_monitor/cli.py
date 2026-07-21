@@ -4,7 +4,6 @@ import argparse
 import json
 import sys
 import time
-from pathlib import Path
 from typing import Sequence
 
 from . import __version__
@@ -32,12 +31,21 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument("--json", action="store_true", help="emit stable machine-readable JSON")
-    parser.add_argument("--device", type=Path, help="select a specific /dev/hidraw device")
+    parser.add_argument("--device", help="select a specific platform HID device")
     parser.add_argument("--serial", help="select a specific monitor-controller serial")
-    parser.add_argument("--ddc-bus", type=_positive_int, help="select a specific ddcutil I2C bus")
+    parser.add_argument(
+        "--ddc-bus",
+        type=_positive_int,
+        help="select a specific ddcutil I2C bus on Linux",
+    )
+    parser.add_argument(
+        "--ddc-display",
+        help="select a specific BetterDisplay UUID on macOS",
+    )
     parser.add_argument(
         "--ddcutil",
-        default="ddcutil",
+        "--betterdisplaycli",
+        dest="ddc_executable",
         metavar="PATH",
         help=argparse.SUPPRESS,
     )
@@ -183,7 +191,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             device=args.device,
             serial=args.serial,
             ddc_bus=args.ddc_bus,
-            ddcutil=args.ddcutil,
+            ddc_display=args.ddc_display,
+            ddc_executable=args.ddc_executable,
         ) as controller:
             if args.command == "status":
                 return _show_features(controller, MPG341CX.status_features, args.json)

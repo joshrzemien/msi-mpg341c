@@ -9,10 +9,13 @@ def test_no_command_defaults_to_status():
 
 
 def test_global_device_selectors_are_parsed():
-    args = parse_args(["--serial", "ABC", "--ddc-bus", "3", "get", "input"])
+    args = parse_args(
+        ["--serial", "ABC", "--ddc-bus", "3", "--ddc-display", "UUID", "get", "input"]
+    )
 
     assert args.serial == "ABC"
     assert args.ddc_bus == 3
+    assert args.ddc_display == "UUID"
     assert args.command == "get"
 
 

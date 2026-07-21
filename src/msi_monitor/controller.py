@@ -7,7 +7,7 @@ from typing import Literal
 
 from .ddc import DdcTransport
 from .errors import DeviceUnavailable, MonitorError
-from .hidraw import HidrawCandidate, HidrawDevice, discover_candidates
+from .hid import HidCandidate, HidDevice, discover_candidates
 from .profile import (
     MPG341CX,
     Feature,
@@ -37,17 +37,23 @@ class Controller:
     def __init__(
         self,
         profile: MonitorProfile = MPG341CX,
-        device: Path | None = None,
+        device: str | Path | None = None,
         serial: str | None = None,
         ddc_bus: int | None = None,
-        ddcutil: str = "ddcutil",
+        ddc_display: str | None = None,
+        ddc_executable: str | None = None,
     ):
         self.profile = profile
         self.requested_device = device
         self.requested_serial = serial
-        self.ddc = DdcTransport(profile, bus=ddc_bus, executable=ddcutil)
-        self._hid: HidrawDevice | None = None
-        self._candidate: HidrawCandidate | None = None
+        self.ddc = DdcTransport(
+            profile,
+            bus=ddc_bus,
+            display=ddc_display,
+            executable=ddc_executable,
+        )
+        self._hid: HidDevice | None = None
+        self._candidate: HidCandidate | None = None
         self._identity_values: dict[str, int] = {}
 
     def close(self) -> None:
@@ -64,7 +70,7 @@ class Controller:
         self.close()
 
     @property
-    def selected_device(self) -> Path | None:
+    def selected_device(self) -> str | Path | None:
         return self._candidate.device if self._candidate is not None else None
 
     def _feature(self, feature_name: str) -> Feature:
@@ -73,7 +79,7 @@ class Controller:
         except KeyError as error:
             raise MonitorError(f"unknown feature: {feature_name}") from error
 
-    def _select_hid(self) -> HidrawDevice:
+    def _select_hid(self) -> HidDevice:
         if self._hid is not None:
             return self._hid
 
@@ -82,13 +88,13 @@ class Controller:
             requested_device=self.requested_device,
             requested_serial=self.requested_serial,
         )
-        matches: list[tuple[HidrawCandidate, HidrawDevice, int, int]] = []
+        matches: list[tuple[HidCandidate, HidDevice, int, int]] = []
         failures: list[str] = []
         model_feature = self._feature("model")
         uart_feature = self._feature("uart-version")
 
         for candidate in candidates:
-            device = HidrawDevice(candidate)
+            device = HidDevice(candidate)
             try:
                 device.open()
                 model = device.query("model", model_feature)

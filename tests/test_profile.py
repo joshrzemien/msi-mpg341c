@@ -15,6 +15,8 @@ def test_verified_profile_identity():
     assert MPG341CX.uart_version == 21
     assert MPG341CX.tested_firmware == (20,)
     assert MPG341CX.hid_id == "HID_ID=0003:00001462:00003FA4"
+    assert MPG341CX.edid_vendor_id == 0x3669
+    assert MPG341CX.edid_product_id == 0x4DD0
     assert len(MPG341CX.report_descriptor) == 95
 
 

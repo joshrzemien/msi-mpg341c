@@ -28,15 +28,22 @@ class Feature:
 class MonitorProfile:
     slug: str
     product_name: str
-    hid_id: str
+    usb_vendor_id: int
+    usb_product_id: int
     report_descriptor: bytes
     model_id: int
     uart_version: int
     tested_firmware: tuple[int, ...]
     ddc_manufacturer: str
     ddc_model: str
+    edid_vendor_id: int
+    edid_product_id: int
     features: Mapping[str, Feature]
     status_features: tuple[str, ...]
+
+    @property
+    def hid_id(self) -> str:
+        return f"HID_ID=0003:{self.usb_vendor_id:08X}:{self.usb_product_id:08X}"
 
 
 BOOLEAN = {"off": 0, "on": 1}
@@ -204,7 +211,8 @@ STATUS_FEATURES = (
 MPG341CX = MonitorProfile(
     slug="mpg341cx-oled",
     product_name="MSI MPG 341C QD-OLED",
-    hid_id="HID_ID=0003:00001462:00003FA4",
+    usb_vendor_id=0x1462,
+    usb_product_id=0x3FA4,
     report_descriptor=bytes.fromhex(
         "05 01 09 00 a1 01 85 01 15 00 25 ff 19 01 29 08 95 3f 75 08 81 02 "
         "19 01 29 08 91 02 85 02 15 00 25 ff 19 01 29 08 95 3f 75 08 81 02 "
@@ -217,6 +225,8 @@ MPG341CX = MonitorProfile(
     tested_firmware=(20,),
     ddc_manufacturer="MSI",
     ddc_model="MPG341CX OLED",
+    edid_vendor_id=0x3669,
+    edid_product_id=0x4DD0,
     features=FEATURES,
     status_features=STATUS_FEATURES,
 )
