@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.1 — 2026-07-21
+
+- Poll DDC input read-back for up to five seconds so delayed source changes verify reliably.
+
 ## 0.2.0 — 2026-07-21
 
 - Add native macOS HID discovery and I/O through IOKit identity data and HIDAPI.

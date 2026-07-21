@@ -89,6 +89,30 @@ def test_ddc_input_write_is_read_back(monkeypatch):
     assert result.verified == 0x10
 
 
+def test_ddc_input_verification_polls_until_source_changes(monkeypatch):
+    controller = Controller()
+    values = iter((0x10, 0x10, 0x11))
+    sent = []
+    sleeps = []
+
+    class DelayedDdc:
+        def query_input(self):
+            return next(values)
+
+        def set_input(self, target):
+            sent.append(target)
+
+    controller.ddc = DelayedDdc()
+    monkeypatch.setattr("msi_monitor.controller.time.sleep", sleeps.append)
+
+    result = controller.change_feature("input", "hdmi-1", allow_disconnect=True)
+
+    assert sent == [0x11]
+    assert sleeps == [0.25, 0.25]
+    assert result.outcome == "switched"
+    assert result.verified == 0x11
+
+
 def test_disconnect_after_write_is_reported_as_unverified(monkeypatch):
     controller = Controller()
     hid = FakeHid({"kvm": 0})

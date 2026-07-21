@@ -167,21 +167,40 @@ class Controller:
             self.ddc.set_input(target)
         else:
             self._select_hid().send(feature_name, feature, target)
-        time.sleep(0.25)
-        try:
-            verified = self.read_feature(feature_name)
-        except MonitorError as error:
+
+        verification_deadline = time.monotonic() + (
+            5.0 if feature.source == "ddc" else 0.25
+        )
+        verified = current
+        verification_error: MonitorError | None = None
+        while True:
+            time.sleep(0.25)
+            try:
+                verified = self.read_feature(feature_name)
+                verification_error = None
+            except MonitorError as error:
+                verification_error = error
+            if verification_error is None and verified == target:
+                return ChangeResult(
+                    feature_name,
+                    current,
+                    target,
+                    "switched",
+                    verified=verified,
+                )
+            if feature.source != "ddc" or time.monotonic() >= verification_deadline:
+                break
+
+        if verification_error is not None:
             return ChangeResult(
                 feature_name,
                 current,
                 target,
                 "sent-unverified",
-                verification_error=str(error),
+                verification_error=str(verification_error),
             )
-        if verified != target:
-            raise MonitorError(
-                f"{feature_name} verification failed: requested "
-                f"{format_feature_value(feature_name, target)}, read back "
-                f"{format_feature_value(feature_name, verified)}"
-            )
-        return ChangeResult(feature_name, current, target, "switched", verified=verified)
+        raise MonitorError(
+            f"{feature_name} verification failed: requested "
+            f"{format_feature_value(feature_name, target)}, read back "
+            f"{format_feature_value(feature_name, verified)}"
+        )
