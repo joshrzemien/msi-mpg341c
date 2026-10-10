@@ -41,7 +41,7 @@ def test_explicit_bus_replaces_model_selector(monkeypatch):
 
     DdcTransport(MPG341CX, bus=3, platform_name="linux").set_input(0x10)
 
-    assert calls == [("ddcutil", "--bus", "3", "setvcp", "60", "10")]
+    assert calls == [("ddcutil", "--bus", "3", "setvcp", "60", "0x10")]
 
 
 def test_query_input_rejects_unexpected_output(monkeypatch):

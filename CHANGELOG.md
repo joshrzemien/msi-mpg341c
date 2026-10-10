@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Fix Linux input switching: pass the DDC input value to `ddcutil` in hex (`0x10`). A bare `10` reads as decimal 0x0a, which the monitor ignores, so every Linux input change failed verification.
+
 ## 0.3.0 — 2026-07-21
 
 - Switch macOS input control to the verified MSI HID `00500` command.

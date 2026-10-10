@@ -71,4 +71,5 @@ class DdcTransport:
     def set_input(self, target: int) -> None:
         if self.platform_name != "linux":
             raise MonitorError(f"DDC input control is not supported on {self.platform_name}")
-        self._run(*self._linux_selector(), "setvcp", "60", f"{target:02x}")
+        # ddcutil reads bare values as decimal: "10" would request 0x0a, which the monitor ignores.
+        self._run(*self._linux_selector(), "setvcp", "60", f"0x{target:02x}")
