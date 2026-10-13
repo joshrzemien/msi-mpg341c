@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.3.1 — Unreleased
+## 0.3.1 — 2026-10-12
 
 - Fix Linux input switching: pass the DDC input value to `ddcutil` in hex (`0x10`). A bare `10` reads as decimal 0x0a, which the monitor ignores, so every Linux input change failed verification.
 
