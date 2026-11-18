@@ -1,5 +1,13 @@
 # Changelog
 
+## Unreleased
+
+- Add the MSI MPG 322URX QD-OLED profile (HID model `126`, UART `21`, firmware `24`).
+- Select the device profile automatically from the HID report descriptor.
+- Make feature catalogs per profile; `get`/`set` report features that the detected model does not support.
+- Add 322URX features: game and pro mode presets, EOTF Boost HDR mode, Smart Crosshair, refresh-rate overlay, alarm clock, PiP size and position, Info On Screen, RGB LED, power button action, and Navi key assignments.
+- Omit black equalizer, response time, HDCR, and HDMI mode on the 322URX; they do not answer on firmware 24.
+
 ## 0.3.1 — 2026-10-12
 
 - Fix Linux input switching: pass the DDC input value to `ddcutil` in hex (`0x10`). A bare `10` reads as decimal 0x0a, which the monitor ignores, so every Linux input change failed verification.

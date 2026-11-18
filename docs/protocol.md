@@ -1,12 +1,12 @@
 # Protocol notes
 
-These notes describe the behavior verified on an MSI MPG 341C QD-OLED reporting HID model `117`, UART protocol `21`, and firmware `20`.
+These notes describe the behavior verified on an MSI MPG 341C QD-OLED reporting HID model `117`, UART protocol `21`, and firmware `20`, and on an MSI MPG 322URX QD-OLED reporting HID model `126`, UART protocol `21`, and firmware `24`. The 322URX differences are listed in [MPG 322URX](#mpg-322urx).
 
 ## USB identity
 
 - Vendor/product: `1462:3fa4`
-- HID name: `MSI Gaming Controller`
-- HID report descriptor length: 95 bytes
+- HID name: `MSI Gaming Controller` (341C), `MSI Monitor MPG 322URX QD-OLED` (322URX)
+- HID report descriptor length: 95 bytes (341C), 150 bytes (322URX)
 - Command report ID: `0x01`
 - Linux `hidraw` report size: 64 bytes, including the report ID
 
@@ -79,3 +79,29 @@ The implementation:
 6. Reads back changed values when the transport remains reachable.
 
 There is no public raw-command interface. Unverified values, firmware operations, resets, and panel-maintenance activation are outside the supported protocol surface.
+
+## MPG 322URX
+
+The 322URX shares the VID/PID, report ID `0x01`, 64-byte framing, and UART protocol `21` with the 341C. Its report descriptor declares reports `0x01`, `0x02`, `0x04`, `0x05`, `0x11`, `0x30`, and `0x72` (the 341C declares `0x01`–`0x04`); only report `0x01` is used.
+
+Keys that do not answer on firmware 24 and are therefore not exposed: `00210` (black equalizer), `00220` (response time), `00240` (HDCR), `008@0` (HDMI mode).
+
+Additional keys, each verified by a write, read-back, and restore on the connected monitor. Current values were matched against the on-screen menu; the meaning of the remaining enum values follows the menu order and the [msigd](https://github.com/couriersud/msigd) catalog for related MSI models.
+
+| Key | Feature | Values |
+| --- | --- | --- |
+| `00200` | Game mode | `0` user, `1` FPS, `2` racing, `3` RTS, `4` RPG, `5` premium color |
+| `00300` | Pro mode | `0` user, `1` anti-blue, `2` movie, `3` office, `4` sRGB, `5` Adobe RGB, `6` DCI-P3, `7` eco |
+| `004:0` | DisplayHDR | `0` True Black 400, `1` Peak 1000, `2` EOTF Boost |
+| `00250` / `00251` | Refresh-rate overlay / corner | off/on; `0`–`3` left-top, right-top, left-bottom, right-bottom |
+| `00260` / `00263` | Alarm clock timer / corner | `0` off, `1`–`4`; corner as above |
+| `00270` / `00271` | Smart Crosshair icon / color | `0` off, `1`–`6`; `0` white, `1` red, `2` auto |
+| `00630` / `00640` | PiP size / corner | small, medium, large; corner as above |
+| `00830` | Info On Screen | off/on |
+| `00860` | RGB LED | off/on |
+| `00880` | Power button | `0` off, `1` standby (the 341C profile labels this key DP deep sleep) |
+| `00900`–`00930` | Navi key up/down/left/right | `0` off, `1` brightness, `2` game mode, `3` Smart Crosshair, `4` alarm clock, `5` input, `6` PiP/PbP, `7` refresh rate, `8` info, `9` Night Vision, `10` Optix Scope, `11` KVM |
+
+Changing `004:0` re-initializes the HID controller; the read-back after the write may time out once. The profile marks it as a disconnecting change.
+
+The alarm clock duration (`00262`) is not exposed because values above `999` do not fit the three-digit write format.

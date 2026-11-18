@@ -79,7 +79,7 @@ FEATURES: dict[str, Feature] = {
         "00140",
         "MSI internal model identifier",
         writable=False,
-        choices={"mpg341cx-oled": 117},
+        choices={"mpg341cx-oled": 117, "mpg322urx-oled": 126},
         decoder="model",
     ),
     "uart-version": Feature("00150", "Monitor protocol version", writable=False, decoder="uart"),
@@ -243,8 +243,95 @@ MPG341CX = MonitorProfile(
 )
 
 
-def parse_feature_value(feature_name: str, raw_value: str) -> int:
-    feature = FEATURES[feature_name]
+# MPG 322URX QD-OLED: same UART protocol (21), different HID report descriptor.
+# These features did not answer on firmware 24 and are omitted.
+MPG322URX_UNSUPPORTED = frozenset({"black-equalizer", "response-time", "hdcr", "hdmi-mode"})
+
+CORNERS = {"left-top": 0, "right-top": 1, "left-bottom": 2, "right-bottom": 3}
+NAVI_ACTIONS = {
+    "off": 0, "brightness": 1, "game-mode": 2, "smart-crosshair": 3, "alarm-clock": 4,
+    "input": 5, "pip-pbp": 6, "refresh-rate": 7, "info": 8, "night-vision": 9,
+    "optix-scope": 10, "kvm": 11,
+}
+
+# Verified against the OSD of an MPG 322URX (firmware 24).
+MPG322URX_FEATURES: dict[str, Feature] = {
+    **{k: v for k, v in FEATURES.items() if k not in MPG322URX_UNSUPPORTED | {"deep-sleep"}},
+    "gaming-mode": Feature(
+        "00200",
+        "Game mode preset",
+        choices={"user": 0, "fps": 1, "racing": 2, "rts": 3, "rpg": 4, "premium-color": 5},
+    ),
+    "pro-mode": Feature(
+        "00300",
+        "Professional mode preset",
+        choices={
+            "user": 0, "anti-blue": 1, "movie": 2, "office": 3, "srgb": 4,
+            "adobe-rgb": 5, "dci-p3": 6, "eco": 7,
+        },
+    ),
+    "display-hdr": Feature(
+        "004:0",
+        "OLED HDR mode",
+        choices={"true-black-400": 0, "peak-1000": 1, "eotf-boost": 2},
+        safety="disconnect",
+    ),
+    "refresh-rate-display": Feature("00250", "Show refresh rate on screen", choices=BOOLEAN),
+    "refresh-rate-position": Feature("00251", "Refresh-rate overlay position", choices=CORNERS),
+    "alarm-clock": Feature(
+        "00260", "Alarm clock timer", choices={"off": 0, "1": 1, "2": 2, "3": 3, "4": 4}
+    ),
+    "alarm-clock-position": Feature("00263", "Alarm clock position", choices=CORNERS),
+    "smart-crosshair": Feature(
+        "00270",
+        "Smart Crosshair icon",
+        choices={"off": 0, **{f"icon-{i}": i for i in range(1, 7)}},
+    ),
+    "smart-crosshair-color": Feature(
+        "00271", "Smart Crosshair color", choices={"white": 0, "red": 1, "auto": 2}
+    ),
+    "pip-size": Feature("00630", "PiP window size", choices={"small": 0, "medium": 1, "large": 2}),
+    "pip-position": Feature("00640", "PiP window position", choices=CORNERS),
+    "info-on-screen": Feature("00830", "Show info on screen", choices=BOOLEAN),
+    "rgb-led": Feature("00860", "RGB LED", choices=BOOLEAN),
+    "power-button": Feature("00880", "Power button action", choices={"off": 0, "standby": 1}),
+    "navi-up": Feature("00900", "Navi key up action", choices=NAVI_ACTIONS),
+    "navi-down": Feature("00910", "Navi key down action", choices=NAVI_ACTIONS),
+    "navi-left": Feature("00920", "Navi key left action", choices=NAVI_ACTIONS),
+    "navi-right": Feature("00930", "Navi key right action", choices=NAVI_ACTIONS),
+}
+
+MPG322URX = MonitorProfile(
+    slug="mpg322urx-oled",
+    product_name="MSI MPG 322URX QD-OLED",
+    usb_vendor_id=0x1462,
+    usb_product_id=0x3FA4,
+    report_descriptor=bytes.fromhex(
+        "05 01 09 00 a1 01 85 01 15 00 26 ff 00 19 01 29 08 95 3f 75 08 81 02 "
+        "19 01 29 08 91 02 85 02 15 00 26 ff 00 19 01 29 08 95 3f 75 08 81 02 "
+        "19 01 29 08 91 02 85 04 15 00 26 ff 00 19 01 29 08 95 3f 75 08 81 02 "
+        "19 01 29 08 91 02 85 05 09 01 15 00 26 ff 00 75 08 95 3f 81 02 09 01 "
+        "91 02 85 11 09 01 15 00 26 ff 00 75 08 96 00 01 b1 02 06 00 ff 09 01 "
+        "a1 01 85 72 09 01 15 00 26 ff 00 75 08 95 a7 b1 02 85 30 09 01 15 00 "
+        "26 ff 00 75 08 96 07 01 b1 02 c0 c0"
+    ),
+    model_id=126,
+    uart_version=21,
+    tested_firmware=(24,),
+    ddc_manufacturer="MSI",
+    ddc_model="MPG322UX OLED",
+    hid_input_feature=HID_INPUT_FEATURE,
+    features=MPG322URX_FEATURES,
+    status_features=tuple(f for f in STATUS_FEATURES if f not in MPG322URX_UNSUPPORTED),
+)
+
+PROFILES: tuple[MonitorProfile, ...] = (MPG341CX, MPG322URX)
+
+
+def parse_feature_value(
+    feature_name: str, raw_value: str, features: Mapping[str, Feature] | None = None
+) -> int:
+    feature = (features or FEATURES)[feature_name]
     if feature.choices is not None:
         normalized = raw_value.lower()
         if normalized not in feature.choices:
@@ -262,8 +349,10 @@ def parse_feature_value(feature_name: str, raw_value: str) -> int:
     return value
 
 
-def format_feature_value(feature_name: str, value: int) -> str:
-    feature = FEATURES[feature_name]
+def format_feature_value(
+    feature_name: str, value: int, features: Mapping[str, Feature] | None = None
+) -> str:
+    feature = (features or FEATURES)[feature_name]
     if feature.choices is not None:
         labels = {choice_value: label for label, choice_value in feature.choices.items()}
         label = labels.get(value)
