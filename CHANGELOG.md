@@ -6,6 +6,7 @@
 - Select the device profile automatically from the HID report descriptor.
 - Make feature catalogs per profile; `get`/`set` report features that the detected model does not support.
 - Add 322URX features: game and pro mode presets, EOTF Boost HDR mode, Smart Crosshair, refresh-rate overlay, alarm clock, PiP size and position, Info On Screen, RGB LED, power button action, and Navi key assignments.
+- Add an optional Qt desktop GUI (`msi-monitor-gui`, extra `gui`) with tooltips and German, English, and Spanish translations.
 - Omit black equalizer, response time, HDCR, and HDMI mode on the 322URX; they do not answer on firmware 24.
 
 ## 0.3.1 — 2026-10-12

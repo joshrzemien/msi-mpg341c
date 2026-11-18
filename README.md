@@ -103,6 +103,17 @@ If an input change removes the picture, restore HDMI 1 over DDC/CI:
 msi-monitor set input hdmi-1 --allow-disconnect
 ```
 
+### Desktop GUI
+
+An optional Qt window exposes every feature of the detected model, grouped into tabs, with explanatory tooltips and the same safety confirmations as the CLI. The language follows the system locale (German, English, Spanish) and can be changed in the window.
+
+```bash
+uv tool install ".[gui]"
+msi-monitor-gui
+```
+
+A desktop entry is available at `contrib/desktop/msi-monitor-gui.desktop`; copy it to `~/.local/share/applications/`.
+
 ### Multiple monitors
 
 Automatic selection refuses ambiguous supported HID controllers or Linux DDC displays. Select one explicitly with a global option placed before the command:
@@ -133,6 +144,7 @@ Errors are written to stderr. Exit code `2` means a command was sent but could n
 ## Architecture
 
 - `cli.py`: argument parsing and human/JSON output
+- `gui.py`: optional PySide6 desktop window; `i18n.py`: its translations
 - `controller.py`: feature operations, safety policy, and read-back verification
 - `profile.py`: verified device identities and per-model feature catalogs
 - `protocol.py`: pure HID frame construction and response decoding
