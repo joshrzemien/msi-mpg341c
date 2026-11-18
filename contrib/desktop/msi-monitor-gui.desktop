@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=MSI Monitor
+Comment=Control MSI QD-OLED monitor settings
+Comment[de]=MSI-QD-OLED-Monitoreinstellungen steuern
+Comment[es]=Controlar los ajustes del monitor MSI QD-OLED
+Exec=msi-monitor-gui
+Icon=video-display
+Categories=Settings;HardwareSettings;Qt;

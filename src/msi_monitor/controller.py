@@ -187,14 +187,15 @@ class Controller:
         feature = self._feature(feature_name)
         if not feature.writable:
             raise MonitorError(f"{feature_name} is read-only")
-        target = parse_feature_value(feature_name, raw_value)
+        target = parse_feature_value(feature_name, raw_value, self.profile.features)
         current = self.read_feature(feature_name)
         if current == target:
             return ChangeResult(feature_name, current, target, "unchanged", verified=current)
         if feature.safety == "disconnect" and not allow_disconnect:
+            features = self.profile.features
             raise MonitorError(
-                f"refusing {feature_name} {format_feature_value(feature_name, current)} -> "
-                f"{format_feature_value(feature_name, target)} without --allow-disconnect"
+                f"refusing {feature_name} {format_feature_value(feature_name, current, features)} -> "
+                f"{format_feature_value(feature_name, target, features)} without --allow-disconnect"
             )
         if feature.safety == "panel" and not allow_panel_risk:
             raise MonitorError(
@@ -241,6 +242,6 @@ class Controller:
             )
         raise MonitorError(
             f"{feature_name} verification failed: requested "
-            f"{format_feature_value(feature_name, target)}, read back "
-            f"{format_feature_value(feature_name, verified)}"
+            f"{format_feature_value(feature_name, target, self.profile.features)}, read back "
+            f"{format_feature_value(feature_name, verified, self.profile.features)}"
         )
